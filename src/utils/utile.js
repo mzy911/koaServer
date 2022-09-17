@@ -1,6 +1,7 @@
 const route = require("koa-route"); // 路由
 const fs = require("fs");
 const path = require("path");
+const { rejects } = require("assert");
 
 // 写入文档
 const wirteFile = (path, data) => {
@@ -19,19 +20,21 @@ const readFileSync = (path) => {
   );
 };
 
-// 读取
-const isExists = (filePath, callBack) => {
-  fs.exists(filePath, (exists) => {
-    if (!exists) {
-      callBack();
-    } else {
-      console.log("文件已存在");
-    }
+// 判断某文件是否存在，做对应处理
+const isExistsFile = (filePath) => {
+  return new Promise((resolve, reject) => {
+    fs.exists(filePath, (exists) => {
+      if (exists) {
+        resolve(true);
+      } else {
+        resolve(false);
+      }
+    });
   });
 };
 
 module.exports = {
   wirteFile,
   readFileSync,
-  isExists,
+  isExistsFile,
 };

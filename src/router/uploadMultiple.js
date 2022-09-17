@@ -7,7 +7,7 @@ const koaBody = require("koa-body");
 
 const { Hash } = require("crypto");
 const { get } = require("http");
-const { isExists } = require("../utils/utile");
+const { isExistsFile } = require("../utils/utile");
 
 // 1、检测是否上传完毕（秒传）
 router.post(
@@ -51,14 +51,15 @@ router.post(
 );
 
 // 3、合并chunk
-router.post("/upload/merge/chunk", koaBody(), (ctx, next) => {
+router.post("/upload/merge/chunk", koaBody(), async (ctx, next) => {
   let getData = ctx.request.body;
   const newFilePath = path.join(
     __dirname,
     `../public/uploadMultiple/${getData.name}${getData.suffix}`
   );
 
-  isExists(newFilePath, async () => {
+  const isExist = await isExistsFile(newFilePath);
+  if (!isExist) {
     const fileWriteStream = fs.createWriteStream(newFilePath, {
       flags: "a",
     });
@@ -86,7 +87,7 @@ router.post("/upload/merge/chunk", koaBody(), (ctx, next) => {
         });
       });
     }
-  });
+  }
 
   ctx.body = {
     msg: "合并",
