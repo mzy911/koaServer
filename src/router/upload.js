@@ -3,8 +3,6 @@ const koaForm = require("formidable-upload-koa");
 const path = require("path");
 const send = require("koa-send");
 
-const { saveFile } = require("./files");
-
 // 1、图片上传
 router.post(
   "/package/item/uploadImg",
