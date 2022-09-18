@@ -10,24 +10,16 @@ const { get } = require("http");
 const { isExistsFile } = require("../utils/utile");
 
 // 1、检测是否上传完毕（秒传）
-router.post(
-  "/upload/check/file",
-  koaForm({
-    uploadDir: path.join(__dirname, "../public/file/"), // 文件存放的位置
-    keepExtensions: true, // 包含扩展名
-    maxFileSize: 1024 * 1024, // 大小为 1m
-  }),
-  async (ctx, next) => {
-    const file = ctx.req.files["file"]; // 在ctx.req.files里获取到上传的文件，['file']是前端input上传文件组件的name属性值
-    const { size, path, name, type } = file; // file 里面的参数
-    ctx.body = {
-      name,
-      type,
-      size,
-      url: `http://127.0.0.1:3000/file/${path.split("/").slice(-1)[0]}`,
-    };
-  }
-);
+router.post("/upload/check/uploaded", koaBody(), async (ctx, next) => {
+  let { name } = ctx.request.body;
+  const newFilePath = path.join(__dirname, `../public/uploadMultiple/${name}`);
+  const isExist = await isExistsFile(newFilePath);
+  console.log("name", name, isExist);
+
+  ctx.body = {
+    exist: isExist,
+  };
+});
 
 // 2、获取上传过的chunk
 router.post(
@@ -52,23 +44,17 @@ router.post(
 
 // 3、合并chunk
 router.post("/upload/merge/chunk", koaBody(), async (ctx, next) => {
-  let getData = ctx.request.body;
-  const newFilePath = path.join(
-    __dirname,
-    `../public/uploadMultiple/${getData.name}${getData.suffix}`
-  );
+  let { hash, suffix, name, chunkNum } = ctx.request.body;
+  const newFilePath = path.join(__dirname, `../public/uploadMultiple/${name}`);
 
   const isExist = await isExistsFile(newFilePath);
   if (!isExist) {
     const fileWriteStream = fs.createWriteStream(newFilePath, {
       flags: "a",
     });
-    for (let i = 1; i <= 8; i++) {
+    for (let i = 1; i <= chunkNum; i++) {
       await mergeFiles(
-        path.join(
-          __dirname,
-          `../public/uploadMultiple/4991c75ca2bd820604d72319b93d6c74${i}${getData.suffix}`
-        ),
+        path.join(__dirname, `../public/uploadMultiple/${hash}${i}.${suffix}`),
         i
       );
     }
@@ -81,7 +67,7 @@ router.post("/upload/merge/chunk", koaBody(), async (ctx, next) => {
         rs.on("end", function () {
           fs.unlink(fileName, () => {});
           resolve("xx");
-          if (index == 8) {
+          if (index == chunkNum) {
             fileWriteStream.end();
           }
         });
